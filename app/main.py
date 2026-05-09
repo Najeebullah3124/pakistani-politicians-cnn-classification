@@ -1,11 +1,12 @@
 import os
+import io
 import numpy as np
-import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PIL import Image
-import io
+if os.environ.get("CI") != "true":
+    import tensorflow as tf
 
 app = FastAPI(title="Pakistani Politician Classifier API")
 
