@@ -15,5 +15,8 @@ CNN-based image classification system for Pakistani politicians.
 ## Dataset
 16 classes of Pakistani public figures.
 
+## Live API
+https://reapply-frequency-marshy.ngrok-free.dev/docs
+
 ## Team
 ANN + MLOps Semester Project
