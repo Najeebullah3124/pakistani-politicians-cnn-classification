@@ -8,6 +8,9 @@ from PIL import Image
 if os.environ.get("CI") != "true":
     import tensorflow as tf
 
+if os.environ.get("CI") == "true":
+    model = None
+
 app = FastAPI(title="Pakistani Politician Classifier API")
 
 app.add_middleware(
