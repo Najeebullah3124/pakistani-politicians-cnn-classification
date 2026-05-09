@@ -1,5 +1,7 @@
 name: CI/CD Pipeline - Politician Classifier
-
+env:
+  CI: true
+  
 on:
   push:
     branches: [ main ]
