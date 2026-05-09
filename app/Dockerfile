@@ -2,11 +2,8 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies needed for ML libraries
+RUN apt-get update && apt-get install -y     build-essential     cmake     libgl1-mesa-glx     libglib2.0-0     libsm6     libxext6     libxrender1     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
 COPY requirements.txt .
