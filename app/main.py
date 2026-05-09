@@ -5,8 +5,10 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PIL import Image
-if os.environ.get("CI") != "true":
+if os.getenv("CI") != "true":
     import tensorflow as tf
+else:
+    tf = None
 
 if os.environ.get("CI") == "true":
     model = None
@@ -41,7 +43,10 @@ def load_model():
         print("Running in CI — skipping model load")
         model = None
     else:
-        model = tf.keras.models.load_model(MODEL_PATH)
+        if tf is not None:
+            model = tf.keras.models.load_model(MODEL_PATH)
+        else:
+            model = None
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
