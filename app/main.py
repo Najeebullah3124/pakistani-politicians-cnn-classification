@@ -1,4 +1,4 @@
-
+import os
 import numpy as np
 import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile
@@ -33,8 +33,11 @@ model      = None
 @app.on_event("startup")
 def load_model():
     global model
-    model = tf.keras.models.load_model(MODEL_PATH)
-    print("Model loaded successfully")
+    if os.environ.get("CI") == "true":
+        print("Running in CI — skipping model load")
+        model = None
+    else:
+        model = tf.keras.models.load_model(MODEL_PATH)
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
