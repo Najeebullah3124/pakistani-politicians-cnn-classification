@@ -1,17 +1,16 @@
 import os
-import io
 import numpy as np
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PIL import Image
-if os.getenv("CI") != "true":
-    import tensorflow as tf
-else:
-    tf = None
+import io
 
-if os.environ.get("CI") == "true":
-    model = None
+# ✅ Safe TensorFlow import (FIXES CI ERROR)
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 
 app = FastAPI(title="Pakistani Politician Classifier API")
 
@@ -22,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Class names (must match training order) 
+# ── Class names (must match training order)
 CLASS_NAMES = [
     "ahmed_sharif_chaudhry", "asad_umar", "asif_ali_zardari",
     "bilawal_bhutto", "fawad_chaudhry", "gohar_ali_khan",
@@ -32,41 +31,53 @@ CLASS_NAMES = [
     "syed_mohsin_raza_naqvi"
 ]
 
-# ── Load model once at startup
-MODEL_PATH = "resnet_final.keras"   # ResNet50 — best test accuracy
-model      = None
+MODEL_PATH = "resnet_final.keras"
+model = None
 
+# ── Load model safely
 @app.on_event("startup")
 def load_model():
     global model
-    if os.environ.get("CI") == "true":
-        print("Running in CI — skipping model load")
-        model = None
+    if tf is not None and os.path.exists(MODEL_PATH):
+        model = tf.keras.models.load_model(MODEL_PATH)
+        print("✅ Model loaded")
     else:
-        if tf is not None:
-            model = tf.keras.models.load_model(MODEL_PATH)
-        else:
-            model = None
+        model = None
+        print("⚠️ Model not loaded (CI or missing file)")
 
+# ── Preprocess image
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize((224, 224))
     arr = np.array(img, dtype=np.float32)
-    # ResNet50 preprocessing (mean subtraction)
-    arr = tf.keras.applications.resnet50.preprocess_input(arr)
+
+    if tf is not None:
+        arr = tf.keras.applications.resnet50.preprocess_input(arr)
+
     return np.expand_dims(arr, axis=0)
 
+# ── Routes
 @app.get("/")
 def root():
     return {"message": "Pakistani Politician Classifier API", "status": "running"}
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "model_loaded": model is not None}
+    return {
+        "status": "healthy",
+        "model_loaded": model is not None,
+        "tensorflow_available": tf is not None
+    }
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # Validate file type
+
+    if model is None:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Model not available"}
+        )
+
     if file.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
         return JSONResponse(
             status_code=400,
@@ -74,23 +85,24 @@ async def predict(file: UploadFile = File(...)):
         )
 
     image_bytes = await file.read()
-    img_array   = preprocess_image(image_bytes)
+    img_array = preprocess_image(image_bytes)
+
     predictions = model.predict(img_array, verbose=0)[0]
 
-    # Top 3 predictions
-    top3_idx  = np.argsort(predictions)[::-1][:3]
-    top3      = [
+    top3_idx = np.argsort(predictions)[::-1][:3]
+
+    top3 = [
         {
-            "rank":       int(i + 1),
-            "name":       CLASS_NAMES[idx].replace("_", " ").title(),
-            "class_id":   int(idx),
+            "rank": i + 1,
+            "name": CLASS_NAMES[idx].replace("_", " ").title(),
+            "class_id": int(idx),
             "confidence": round(float(predictions[idx]) * 100, 2)
         }
         for i, idx in enumerate(top3_idx)
     ]
 
     return {
-        "predicted_class":   CLASS_NAMES[top3_idx[0]].replace("_", " ").title(),
-        "confidence":        round(float(predictions[top3_idx[0]]) * 100, 2),
-        "top3_predictions":  top3
+        "predicted_class": CLASS_NAMES[top3_idx[0]].replace("_", " ").title(),
+        "confidence": round(float(predictions[top3_idx[0]]) * 100, 2),
+        "top3_predictions": top3
     }
