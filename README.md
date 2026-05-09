@@ -1,1 +1,0 @@
-# pakistani-politicians-cnn-classification
