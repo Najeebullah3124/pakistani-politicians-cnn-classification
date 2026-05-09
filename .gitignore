@@ -1,1 +1,24 @@
-/dataset
+
+# Dataset images (tracked by DVC instead)
+dataset/
+
+# Large model files
+*.keras
+*.h5
+*.pt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# DVC remote storage (local cache)
+dvc_remote_storage/
+
+# MLflow runs (large)
+mlruns/
+
+# Environment
+.env
+*.egg-info/
