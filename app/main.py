@@ -2,11 +2,15 @@ import io
 import os
 
 import numpy as np
-import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image
+
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 
 CLASS_NAMES = [
     "ahmed_sharif_chaudhry", "asad_umar", "asif_ali_zardari",
@@ -53,14 +57,24 @@ model = None
 @app.on_event("startup")
 def load_model() -> None:
     global model
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
-    print(f"Model loaded from {MODEL_PATH}")
+    if tf is None:
+        model = None
+        print("TensorFlow not available; model not loaded")
+        return
+    path = MODEL_PATH
+    if not os.path.exists(path):
+        model = None
+        print(f"No model file at {path}")
+        return
+    model = tf.keras.models.load_model(path, compile=False)
+    print(f"Model loaded from {path}")
 
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((224, 224))
     arr = np.array(img, dtype=np.float32)
-    arr = tf.keras.applications.resnet50.preprocess_input(arr)
+    if tf is not None:
+        arr = tf.keras.applications.resnet50.preprocess_input(arr)
     return np.expand_dims(arr, axis=0)
 
 
@@ -78,11 +92,21 @@ def api_root():
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "model_loaded": model is not None}
+    return {
+        "status": "healthy",
+        "model_loaded": model is not None,
+        "tensorflow_available": tf is not None,
+    }
 
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+    if model is None:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Model not available"},
+        )
+
     if file.content_type not in {"image/jpeg", "image/png", "image/jpg"}:
         return JSONResponse(
             status_code=400,

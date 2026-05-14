@@ -3,21 +3,29 @@
 .env
 .env.*
 
-# Model weights (GitHub file limit 100MB; resnet weights exceed it)
+# Model weights (large; resnet often exceeds GitHub 100MB single-file limit)
 *.keras
+*.h5
+*.pt
 
-# Archives / bulky artifacts (optional: remove lines to version data)
+# Archives
 *.zip
 
-# Training images (large; use release or external storage if you need them in Git)
+# Dataset images (often tracked via DVC or kept local)
 dataset/
 
 # Python
 __pycache__/
 *.py[cod]
+.ipynb_checkpoints/
 .venv/
 venv/
 .venv-ci/
+*.egg-info/
+
+# DVC / MLflow local artifacts
+dvc_remote_storage/
+mlruns/
 
 # OS / IDE
 .DS_Store

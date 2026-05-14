@@ -32,9 +32,25 @@ jobs:
       - name: Ruff lint
         run: ruff check app
 
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install test dependencies
+        run: pip install pytest httpx fastapi uvicorn python-multipart Pillow numpy
+
+      - name: Run API tests
+        run: pytest tests/test_api.py -v
+
   docker-build:
     runs-on: ubuntu-latest
     if: hashFiles('resnet_final.keras') != ''
+    needs: [python-checks, tests]
     steps:
       - uses: actions/checkout@v4
 

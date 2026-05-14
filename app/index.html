@@ -239,13 +239,13 @@
 </head>
 <body>
 
-<h1>Pakistani Politician Classifier</h1>
+<h1>🇵🇰 Pakistani Politician Classifier</h1>
 <p class="subtitle">Upload a face image — CNN identifies the politician</p>
 
 <div class="card">
 
     <div class="upload-zone" id="uploadZone">
-        <div class="icon">[image]</div>
+        <div class="icon">📷</div>
         <p><strong>Click to upload</strong> or drag &amp; drop</p>
         <p>JPEG / PNG images only</p>
     </div>
@@ -275,7 +275,7 @@
 
     <div class="api-note">
         API endpoint
-        <input type="text" id="apiUrl" value="" placeholder="http://localhost:8000">
+        <input type="text" id="apiUrl" value="" placeholder="http://localhost:8000 or http://your-host:8000">
     </div>
 
 </div>
@@ -292,8 +292,6 @@
     const topConf     = document.getElementById('topConf');
     const top3List    = document.getElementById('top3List');
     const apiUrlInput = document.getElementById('apiUrl');
-
-    // Default the API URL to the page's own origin (so same-host FastAPI just works)
     apiUrlInput.value = window.location.origin;
 
     let selectedFile = null;
